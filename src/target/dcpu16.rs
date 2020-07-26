@@ -32,7 +32,7 @@ impl Target for Dcpu16{
     }
 
     fn postlude(&self) -> String {
-        String::new()
+        String::from(":end_file\n")
     }
 
     fn begin_entry_point(&self, var_size: i32, heap_size: i32) -> String {
@@ -40,7 +40,8 @@ impl Target for Dcpu16{
     }
 
     fn end_entry_point(&self) -> String {
-        String::new()
+        // temporarily until hardware support is up and running for the stdio, makes it easier to debug
+        String::from("SET PC, end_file\n")
     }
 
     fn push(&self, n: f64) -> String {
