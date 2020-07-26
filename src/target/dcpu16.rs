@@ -36,7 +36,7 @@ impl Target for Dcpu16{
     }
 
     fn begin_entry_point(&self, var_size: i32, heap_size: i32) -> String {
-        String::from(":start_program\n")
+        String::from(":start_program\nSET Z, heap_idx\n")
     }
 
     fn end_entry_point(&self) -> String {
