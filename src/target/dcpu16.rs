@@ -22,10 +22,70 @@ impl Target for Dcpu16{
             SET PC, start_program
             ", var_size, heap_size)*/
 
-        String::from("SET PC, variables_end\n\
+        String::from("SET PC, definitions_end\n\
+        :callstack_idx\n\
+        DAT callstack\n\
         :heap_idx\n\
         DAT 0x4000\n\
-        :variables_end\n\
+        :
+        :callstack\n\
+        DAT 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n\
+        :gt\n\
+        SET Y, POP\n\
+        SET A, POP\n\
+        SET B, POP\n\
+        SET C, 0\n\
+        IFA A, B\n\
+        SET C, 1\n\
+        SET PUSH, C\n\
+        SET PC, Y\n\
+        :ge\n\
+        SET Y, POP\n\
+        SET A, POP\n\
+        SET B, POP\n\
+        SET C, 1\n\
+        IFU A, B\n\
+        SET C, 0\n\
+        SET PUSH, C\n\
+        SET PC, Y\n\
+        :lt\n\
+        SET Y, POP
+        SET A, POP\n\
+        SET B, POP\n\
+        SET C, 0\n\
+        IFU A, B\n\
+        SET C, 1\n\
+        SET PUSH, C\n\
+        SET PC, Y\n\
+        :le\n\
+        SET Y, POP\n\
+        SET A, POP\n\
+        SET B, POP\n\
+        SET C, 1\n\
+        IFA A, B\n\
+        SET C, 0\n\
+        SET PUSH, C\n\
+        SET PC, Y\n\
+        :prn\n\
+        SET Y, POP\n\
+        SET I, POP\n\
+        SET PC, Y\n\
+        :prs\n\
+        SET Y, POP\n\
+        SET I, POP\n\
+        SET PC, Y\n\
+        :prc\n\
+        SET Y, POP\n\
+        SET I, POP\n\
+        SET PC, Y\n\
+        :prend\n\
+        SET Y, POP\n\
+        SET PC, Y\n\
+        :getch\n\
+        SET Y, POP\n\
+        SET PUSH, 0\n\
+        SET PC, Y\n\
+        :definitions_end\n\
         SET Z, heap_idx\n\
         SET PC, start_program\n\
         ")
@@ -103,10 +163,21 @@ impl Target for Dcpu16{
     }
 
     fn store(&self, size: i32)  -> String {
-        let mut fstr = String::from("SET I, POP ; store\n");
+        /*let mut fstr =       format!("SET I, POP ; store at address I\n\
+                                     SET J, 0 ; stack register root\n\
+                                     SUB J, 1 ; 0th element\n\
+                                     SUB J, {} ; size'th element\n\
+                                     SUB J, I ; size'th + address\n\
+                                     SUB J, 1 ; size - 1 + address\n", size);*/
+
+        let mut fstr = format!("SET I, POP ; Get address to store at\n\
+                                SET J, -1 ; Init J to first stack element\n\
+                                SUB J, I ; Set J to the address to start storing at\n\
+                                SUB J, {} ; Offset J by size\n\
+                                ADD J, 1 ; Start from size-1\n", size);
 
         for i in 0..size {
-            fstr.push_str("STI [I], POP\n"); // STI increases I by 1 
+            fstr.push_str("STI [J], POP\n"); // STI increases I by 1 
         }
 
         fstr.push_str("\n");
@@ -115,10 +186,13 @@ impl Target for Dcpu16{
     }
 
     fn load(&self, size: i32) -> String {
-        let mut fstr = String::from("SET I, POP ; load\n");
+        let mut fstr = String::from("SET I, POP ; load\n\
+                                     SET J, 0\n\
+                                     SUB J, 1\n\
+                                     SUB J, I\n");
 
         for i in 0..size {
-            fstr.push_str("STI PUSH, [I]\n");
+            fstr.push_str("STD PUSH, [J]\n");
         }
 
         fstr
@@ -131,31 +205,42 @@ impl Target for Dcpu16{
     fn fn_definition(&self, name: String, body: String) -> String {
         format!(";startfunc\n\
         :{}\n\
+        SET I, [callstack_idx]\n\
+        SET [I], POP ; set traditional return value in [[callstack_idx]]\n\
+        ADD [callstack_idx], 1\n\
         {}\n\
-        SET PC, POP\n\
+        SUB [callstack_idx], 1\n\
+        SET I, [callstack_idx]\n\
+        SET PC, [I]\n\
         ;endfunc\n\
         ", name, body)
     }
 
     fn call_fn(&self, name: String) -> String {
-        format!("JSR {}\n", name) // Is this valid? Will Oak look up stack frames?
+        format!("JSR {} ; native\n", name) // Is this valid? Will Oak look up stack frames?
     }
 
     fn call_foreign_fn(&self, name: String) -> String {
-        format!("JSR {}\n", name) // Todo: DCPU ABI
+        format!("JSR {} ; foreign\n", name) // Todo: DCPU ABI
     }
 
     fn begin_while(&self) -> String {
         //Labels would be a much better approach here, but would need a unique numbering system
         //PC here is set to AFTER this instruction
-        String::from("SET PUSH, PC ; store loop start\n")
+        //String::from("SET PUSH, PC ; store loop start\n")
+        String::from("
+                      SET I, [callstack_idx]\n\
+                      SET [I], PC ; store loop start\n\
+                      ADD [callstack_idx], 1\n\
+                      ")
     }
 
     fn end_while(&self) -> String {
         String::from("\n\
+        SUB [callstack_idx], 1\n\
         IFN 0, POP\n\
-        SET PC, PEEK ; stored loop start\n\
-        SET X, POP ; pop stored loop start\n\
+        SET I, [callstack_idx]\n\
+        SET PC, [I]\n\
         ")
     }
 
