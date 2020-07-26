@@ -2,6 +2,8 @@ mod c;
 pub use c::C;
 mod go;
 pub use go::Go;
+mod dcpu16;
+pub use dcpu16::Dcpu16;
 
 pub trait Target {
     fn prelude(&self) -> String;

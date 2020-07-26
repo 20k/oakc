@@ -1,4 +1,4 @@
-use oakc::{compile, Go, C};
+use oakc::{compile, Go, C, Dcpu16};
 use std::{fs::read_to_string, path::PathBuf, process::exit};
 
 use clap::{clap_app, crate_authors, crate_version, AppSettings::ArgRequiredElseHelp};
@@ -14,6 +14,7 @@ fn main() {
         (@group target =>
             (@arg c: -c "Compile with C backend")
             (@arg go: -g --go "Compile with Golang backend")
+            (@arg dcpu16: -p --dcpu16 "Compile with DCPU-16 backend")
         )
     )
     .setting(ArgRequiredElseHelp)
@@ -45,6 +46,8 @@ fn main() {
                 compile(&cwd, contents, C)
             } else if matches.is_present("go") {
                 compile(&cwd, contents, Go)
+            } else if matches.is_present("dcpu16") {
+                compile(&cwd, contents, Dcpu16)
             } else {
                 compile(&cwd, contents, C)
             };
