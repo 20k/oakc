@@ -155,33 +155,47 @@ SET PC, Y
 
 ; print string. stack is [address, returnaddr]. string is null terminated
 :prs
-    SET Y, POP ; return address
+    SET A, POP ; return address
     SET I, POP ; address of string start
     XOR I, 0xFFFF ; get memory location of I on stack
     SET J, [screen_cursor]
     :not_null
 
         IFE [I], 0 ; null
-        SET PC, found_null ; terminate loop
+        SET PC, found_null ; terminate loop        
+        
+        IFE [I], 10 ; 10 is '\n'
+        JSR prend
+        
+        IFE [I], 10 ; skip
+        SET PC, prs_skip
 
+        ;SET PC, prs_newline
+        
         SET [J + 0x8000], [I]
-        SUB I, 1
+        
         ADD [J + 0x8000], 0b1111000000000000 ; set character to white
         ADD J, 1
         MOD J, 386 ; wraparound
+        
+        :prs_skip
 
+        SUB I, 1
         SET PC, not_null
 
     :found_null
 
     SET [screen_cursor], J ; update screen cursor
 
-    SET PC, Y ; done
+    SET PC, A ; done
 ;end prs
 
 :prc
     SET Y, POP 
     SET I, POP ; value
+    
+    IFE I, 10 ; newline, use prend
+    SET PC, prend_with_y
     
     SET J, [screen_cursor]
 
@@ -195,8 +209,18 @@ SET PC, Y
     SET PC, Y
 ; end prc
 
+; this function only uses Y, and J
 :prend
 SET Y, POP
+:prend_with_y
+SET J, [screen_cursor]
+
+ADD J, 32
+DVI J, 32
+MLI J, 32
+MOD J, 386
+
+set [screen_cursor], J
 SET PC, Y
 
 :getch
