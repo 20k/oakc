@@ -29,8 +29,8 @@ pub trait Target {
     fn call_fn(&self, name: String) -> String;
     fn call_foreign_fn(&self, name: String) -> String;
 
-    fn begin_while(&self) -> String;
-    fn end_while(&self) -> String;
+    fn begin_while(&self, loop_unique_id: i32) -> String;
+    fn end_while(&self, loop_unique_id: i32) -> String;
 
     fn compile(&self, code: String) -> std::io::Result<()>;
 }

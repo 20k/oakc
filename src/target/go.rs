@@ -79,11 +79,11 @@ impl Target for Go {
         format!("{}(vm);\n", name)
     }
 
-    fn begin_while(&self) -> String {
+    fn begin_while(&self, loop_unique_id: i32) -> String {
         String::from("for vm.pop() != 0.0 {\n")
     }
 
-    fn end_while(&self) -> String {
+    fn end_while(&self, loop_unique_id: i32) -> String {
         String::from("}\n")
     }
 

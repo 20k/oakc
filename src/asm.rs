@@ -102,6 +102,8 @@ impl AsmProgram {
             // Add the function header to the output code
             result += &target.fn_header(AsmFunction::get_assembled_name(id as i32));
         }
+        
+        let mut loop_numbering: i32 = 0;
 
         // It is very important that the entry point is assembled last.
         // This is because of the way things are allocated on the stack.
@@ -109,7 +111,7 @@ impl AsmProgram {
         for func in func_list {
             // Compile the function
             if !func.is_entry_point() {
-                result += &func.assemble(&func_ids, &mut var_size, target)?;
+                result += &func.assemble(&func_ids, &mut var_size, target, &mut loop_numbering)?;
             } else {
                 // Store the entry point for use later
                 // This has the side effect of ignoring multiple definitions
@@ -121,7 +123,7 @@ impl AsmProgram {
         if let Some(func) = entry_point {
             if let Some(main_id) = func_ids.get(Self::ENTRY_POINT) {
                 // Assemble the entry point code
-                result += &func.assemble(&func_ids, &mut var_size, target)?;
+                result += &func.assemble(&func_ids, &mut var_size, target, &mut loop_numbering)?;
 
                 // Call the entry point
                 result += &target.begin_entry_point(var_size, *heap_size);
@@ -180,6 +182,7 @@ impl AsmFunction {
         func_ids: &BTreeMap<String, i32>,
         var_size: &mut i32,
         target: &impl Target,
+        loop_numbering : &mut i32
     ) -> Result<String, AsmError> {
         let mut result = String::new();
 
@@ -188,14 +191,14 @@ impl AsmFunction {
         for (arg_name, arg_type) in &self.args {
             // Define each argument of the function
             result += &AsmStatement::Define(arg_name.clone(), *arg_type)
-                .assemble(func_ids, &mut vars, var_size, target)?;
+                .assemble(func_ids, &mut vars, var_size, target, loop_numbering)?;
             result +=
-                &AsmStatement::Assign(*arg_type).assemble(func_ids, &mut vars, var_size, target)?;
+                &AsmStatement::Assign(*arg_type).assemble(func_ids, &mut vars, var_size, target, loop_numbering)?;
         }
 
         for stmt in &self.body {
             // Assemble each statement in the function body
-            result += &stmt.assemble(func_ids, &mut vars, var_size, target)?;
+            result += &stmt.assemble(func_ids, &mut vars, var_size, target, loop_numbering)?;
         }
 
         // Write the function as output code
@@ -222,6 +225,7 @@ impl AsmStatement {
         vars: &mut BTreeMap<String, (i32, AsmType)>,
         var_size: &mut i32,
         target: &impl Target,
+        loop_numbering: &mut i32
     ) -> Result<String, AsmError> {
         Ok(match self {
             // Define a variable on the stack
@@ -241,28 +245,31 @@ impl AsmStatement {
                 let mut result = String::new();
                 // Run the code that preps the for loop
                 for stmt in pre {
-                    result += &stmt.assemble(func_ids, vars, var_size, target)?;
+                    result += &stmt.assemble(func_ids, vars, var_size, target, loop_numbering)?;
                 }
                 // Check the condition of the for loop
                 for expr in cond {
-                    result += &expr.assemble(func_ids, vars, var_size, target)?;
+                    result += &expr.assemble(func_ids, vars, var_size, target, loop_numbering)?;
                 }
+                
+                (*loop_numbering) += 1;
+                
                 // Begin the loop body
-                result += &target.begin_while();
+                result += &target.begin_while(*loop_numbering);
                 // Run the body of the loop
                 for stmt in body {
-                    result += &stmt.assemble(func_ids, vars, var_size, target)?;
+                    result += &stmt.assemble(func_ids, vars, var_size, target, loop_numbering)?;
                 }
                 // Run the code that procedes the body of the loop
                 for stmt in post {
-                    result += &stmt.assemble(func_ids, vars, var_size, target)?;
+                    result += &stmt.assemble(func_ids, vars, var_size, target, loop_numbering)?;
                 }
                 // Check the condition again
                 for expr in cond {
-                    result += &expr.assemble(func_ids, vars, var_size, target)?;
+                    result += &expr.assemble(func_ids, vars, var_size, target, loop_numbering)?;
                 }
                 // End the loop body
-                result + &target.end_while()
+                result + &target.end_while(*loop_numbering)
             }
 
             Self::Expression(exprs) => {

@@ -80,16 +80,20 @@ impl Target for C {
         format!("{}(vm);\n", name)
     }
 
-    fn begin_while(&self) -> String {
+    fn begin_while(&self, loop_unique_id: i32) -> String {
         String::from("while (machine_pop(vm)) {\n")
     }
 
-    fn end_while(&self) -> String {
+    fn end_while(&self, loop_unique_id: i32) -> String {
         String::from("}\n")
     }
 
     fn compile(&self, code: String) -> Result<()> {
-        let mut child = Command::new("gcc")
+        write("output.c", code).unwrap();
+        
+        Result::Ok(())
+    
+        /*let mut child = Command::new("gcc")
             .arg("-O2")
             .args(&["-o", &format!("main{}", EXE_SUFFIX)[..]])
             .args(&["-x", "c", "-"])
@@ -117,6 +121,6 @@ impl Target for C {
             // child failed to execute
             Result::Err(Error::new(ErrorKind::Other,
                 "unable to spawn child gcc proccess"))
-        }
+        }*/
     }
 }

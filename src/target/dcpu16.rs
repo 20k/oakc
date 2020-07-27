@@ -54,7 +54,8 @@ impl Target for Dcpu16{
         // Pop executes first, gets the current value, and then shifts the stack pointer
         // PEEK then executes, looking at the stack pointer, and then adding back to that value
 
-        String::from("ADD PEEK, POP\n")
+        String::from("    ;add\n\
+        ADD PEEK, POP\n")
     }
 
     fn subtract(&self) -> String {
@@ -62,16 +63,19 @@ impl Target for Dcpu16{
         //the stack definition the OAK model does the second top element of the stack, - the top element of the stack
         //this conveniently maps to DCPU semantics
 
-        String::from("SUB PEEK, POP\n")
+        String::from("    ;sub\n\
+        SUB PEEK, POP\n")
     }
 
     fn divide(&self) -> String {
         //Assuming signed integers
-        String::from("DVI PEEK, POP\n")
+        String::from("    ;div
+        DVI PEEK, POP\n")
     }
 
     fn multiply(&self) -> String {
-        String::from("MLI PEEK, POP\n")
+        String::from("    ;mult
+        MLI PEEK, POP\n")
     }
 
     fn allocate(&self) -> String {
@@ -97,7 +101,8 @@ impl Target for Dcpu16{
         let simple_assembly = false;
 
         if(!simple_assembly) {
-            let mut fstr = format!("SET I, POP ; Get address to store at\n\
+            let mut fstr = format!(";store\n\
+                                    SET I, POP ; Get address to store at\n\
                                     XOR I, 0xFFFF\n");
     
             for i in 0..size {
@@ -116,7 +121,8 @@ impl Target for Dcpu16{
         }
         // This branch is easier on an assembler because it doesn't require expression support. Its a cycle slower though
         else {
-            let mut fstr = format!("SET I, POP ; Get address to store at\n\
+            let mut fstr = format!(";store\n\
+                                    SET I, POP ; Get address to store at\n\
                                     XOR I, 0xFFFF\n\
                                     SUB I, {} ; take 2s complement by adding 1, subtract size\n", -size + 1);
 
@@ -129,7 +135,8 @@ impl Target for Dcpu16{
     }
 
     fn load(&self, size: i32) -> String {
-        let mut fstr = String::from("SET I, POP ; load\n\
+        let mut fstr = String::from(";load\n\
+                                     SET I, POP ; load\n\
                                      XOR I, 0xFFFF ; this is equivalent to doing (-I)-1\n"); 
 
         for i in 0..size {
@@ -166,22 +173,19 @@ impl Target for Dcpu16{
         format!("JSR {} ; foreign\n", name) // Todo: DCPU ABI
     }
 
-    fn begin_while(&self) -> String {
-        //Labels would be a much better approach here, but would need a unique numbering system
-        //PC here is set to AFTER this instruction
-        String::from("SET I, [callstack_idx]\n\
-                      SET [I], PC ; store loop start\n\
-                      ADD [callstack_idx], 1\n\
-                      ")
+    fn begin_while(&self, loop_unique_id: i32) -> String {
+        format!(";beginwhile\n\
+                 :loop_start_{}\n\
+                 IFN 0, POP\n\
+                 SET PC, loop_end_{}\n\
+                 ", loop_unique_id, loop_unique_id)
     }
 
-    fn end_while(&self) -> String {
-        String::from("\n\
-        SUB [callstack_idx], 1\n\
-        IFN 0, POP\n\
-        SET I, [callstack_idx]\n\
-        SET PC, [I]\n\
-        ")
+    fn end_while(&self, loop_unique_id: i32) -> String {
+        format!(";endwhile\n\
+                 SET PC, loop_start_{}\n\
+                 :loop_end_{}\n\
+                 ", loop_unique_id, loop_unique_id)
     }
 
     fn compile(&self, code: String) -> Result<()> {
