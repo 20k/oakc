@@ -7,6 +7,42 @@ DAT 0x4000
 :callstack
 DAT 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
+:media_handler
+DAT boot_screen
+
+.DEF VRAMADDRESS, 0x8000
+.DEF VRAMWORDS, 386
+.DEF SCREENWIDTH, 32
+.DEF SCREENHEIGHT, 12
+
+:screen_cursor
+DAT 0
+
+:boot_screen
+    HWN I ; get connected hardware count
+
+    :discovery
+
+    SUB I, 1
+
+    IFU I, 0
+    SET PC, finished_discovery ; terminate if I < 0
+
+    HWQ I ; this overwrites A,B,C,X,Y
+
+    IFN A, 0xf615
+    SET PC, discovery ; not screen
+    IFN B, 0x7349
+    SET PC, discovery ; not screen
+
+    SET A, 0           ; MEM_MAP_SCREEN
+    SET B, VRAMADDRESS ; Will initialise the LEM and set the vram address
+
+    HWI I              ; Command the LEM to turn on
+    :finished_discovery
+    SET PC, POP
+;end boot screen
+
 :gt
 SET Y, POP
 SET A, POP
@@ -52,10 +88,31 @@ SET Y, POP
 SET I, POP
 SET PC, Y
 
+; print string. stack is [address, returnaddr]. string is null terminated
 :prs
-SET Y, POP
-SET I, POP
-SET PC, Y
+    SET Y, POP ; return address
+    SET I, POP ; address of string start
+    XOR I, 0xFFFF ; get memory location of I on stack
+    SET J, [screen_cursor]
+    :not_null
+
+        IFE [I], 0 ; null
+        SET PC, found_null ; terminate loop
+
+        SET [J + VRAMADDRESS], [I]
+		SUB I, 1
+        ADD [J + VRAMADDRESS], 0b1111000000000000 ; set character to white
+		ADD J, 1
+        MOD J, VRAMWORDS ; wraparound
+
+        SET PC, not_null
+
+    :found_null
+
+    SET [screen_cursor], J ; update screen cursor
+
+    SET PC, Y ; done
+;end prs
 
 :prc
 SET Y, POP

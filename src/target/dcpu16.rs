@@ -14,6 +14,7 @@ impl Target for Dcpu16{
         fstr.push_str("\
         :definitions_end\n\
         SET Z, heap_idx\n\
+        JSR boot_screen\n\
         SET PC, start_program\n\
         ");
         
@@ -167,8 +168,7 @@ impl Target for Dcpu16{
     fn begin_while(&self) -> String {
         //Labels would be a much better approach here, but would need a unique numbering system
         //PC here is set to AFTER this instruction
-        String::from("
-                      SET I, [callstack_idx]\n\
+        String::from("SET I, [callstack_idx]\n\
                       SET [I], PC ; store loop start\n\
                       ADD [callstack_idx], 1\n\
                       ")
