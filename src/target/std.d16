@@ -100,9 +100,9 @@ SET PC, Y
         SET PC, found_null ; terminate loop
 
         SET [J + VRAMADDRESS], [I]
-		SUB I, 1
+        SUB I, 1
         ADD [J + VRAMADDRESS], 0b1111000000000000 ; set character to white
-		ADD J, 1
+        ADD J, 1
         MOD J, VRAMWORDS ; wraparound
 
         SET PC, not_null
@@ -115,9 +115,20 @@ SET PC, Y
 ;end prs
 
 :prc
-SET Y, POP
-SET I, POP
-SET PC, Y
+    SET Y, POP 
+    SET I, POP ; value
+    
+    SET J, [screen_cursor]
+
+    SET [J + VRAMADDRESS], I
+    ADD [J + VRAMADDRESS], 0b1111000000000000 ; set character to white
+    ADD J, 1
+    MOD J, VRAMWORDS ; wraparound
+    
+    SET [screen_cursor], J
+
+    SET PC, Y
+; end prc
 
 :prend
 SET Y, POP
