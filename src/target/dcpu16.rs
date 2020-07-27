@@ -176,7 +176,7 @@ impl Target for Dcpu16{
     fn begin_while(&self, loop_unique_id: i32) -> String {
         format!(";beginwhile\n\
                  :loop_start_{}\n\
-                 IFN 0, POP\n\
+                 IFE 0, POP\n\
                  SET PC, loop_end_{}\n\
                  ", loop_unique_id, loop_unique_id)
     }
