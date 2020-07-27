@@ -1,6 +1,7 @@
 use super::Target;
 use std::{
-    fs::{remove_file, write}
+    fs::{remove_file, write},
+    io::{Error, ErrorKind, Result, Write},
 };
 
 pub struct Dcpu16;
@@ -183,11 +184,11 @@ impl Target for Dcpu16{
         ")
     }
 
-    fn compile(&self, code: String) -> bool {
+    fn compile(&self, code: String) -> Result<()> {
         if let Ok(_) = write("main.dasm16", code) {
-            return true;
+            return Result::Ok(());
         }
 
-        false
+        Result::Err(Error::new(ErrorKind::Other, "Could not write output"))
     }
 }

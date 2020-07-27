@@ -1,5 +1,5 @@
 #![allow(warnings, clippy, unknown_lints)]
-use std::{path::PathBuf, process::exit};
+use std::{io::Result, path::PathBuf, process::exit};
 pub type Identifier = String;
 pub type StringLiteral = String;
 
@@ -17,7 +17,7 @@ use comment::cpp::strip;
 use lalrpop_util::{lalrpop_mod, ParseError};
 lalrpop_mod!(pub parser);
 
-pub fn compile(cwd: &PathBuf, input: impl ToString, target: impl Target) -> bool {
+pub fn compile(cwd: &PathBuf, input: impl ToString, target: impl Target) -> Result<()> {
     match parse(input).compile(cwd) {
         Ok(mir) => match mir.assemble() {
             Ok(asm) => match asm.assemble(&target) {
@@ -40,12 +40,13 @@ pub fn compile(cwd: &PathBuf, input: impl ToString, target: impl Target) -> bool
 }
 
 pub fn parse(input: impl ToString) -> HirProgram {
-    match parser::ProgramParser::new().parse(&strip(input.to_string()).unwrap()) {
+    let code = &strip(input.to_string()).unwrap();
+    match parser::ProgramParser::new().parse(code) {
         // if the parser succeeds, build will succeed
         Ok(parsed) => parsed,
         // if the parser succeeds, annotate code with comments
         Err(e) => {
-            eprintln!("{}", format_error(&input.to_string(), e));
+            eprintln!("{}", format_error(&code, e));
             exit(1);
         }
     }
@@ -86,8 +87,11 @@ fn get_line(script: &str, location: usize) -> (usize, String, usize) {
     let line = match script.lines().nth(line_number - 1) {
         Some(line) => line,
         None => {
-            let lines = script.lines().collect::<Vec<&str>>();
-            lines[lines.len() - 1]
+            if let Some(line) = script.lines().last() {
+                line
+            } else {
+                ""
+            }
         }
     }
     .replace("\t", "    ");

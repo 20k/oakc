@@ -113,11 +113,11 @@ SET PC, Y
         IFL I, 10
         SET PC, lt_ten
         
-        SET Y, I
-        MOD Y, 10 ; display in base 10
+        SET B, I
+        MOD B, 10 ; display in base 10
         DIV I, 10 
         
-        SET [X + prn_stack], Y
+        SET [X + prn_stack], B
         ADD X, 1
         
         SET PC, prn_loop
@@ -136,9 +136,9 @@ SET PC, Y
         IFU X, 0
         SET PC, prn_done
         
-        SET Y, [prn_stack + X]
-        ADD Y, 48
-        SET [J + VRAMADDRESS], Y
+        SET B, [prn_stack + X]
+        ADD B, 48
+        SET [J + VRAMADDRESS], B
         ADD [J + VRAMADDRESS], 0xF000
         
         ADD J, 1
