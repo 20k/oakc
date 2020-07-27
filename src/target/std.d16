@@ -164,13 +164,13 @@ SET PC, Y
         IFE [I], 0 ; null
         SET PC, found_null ; terminate loop        
         
+        SET [screen_cursor], J
+        
         IFE [I], 10 ; 10 is '\n'
         JSR prend
         
         IFE [I], 10 ; skip
         SET PC, prs_skip
-
-        ;SET PC, prs_newline
         
         SET [J + 0x8000], [I]
         
@@ -209,18 +209,68 @@ SET PC, Y
     SET PC, Y
 ; end prc
 
+:next_screen_cursor
+DAT 0
+:next_next_screen_cursor
+DAT 0
+
 ; this function only uses Y, and J
 :prend
 SET Y, POP
 :prend_with_y
+SET [next_screen_cursor], [screen_cursor]
+MOD [next_screen_cursor], 386
+
+; round upwards to next multiple of 32
+ADD [next_screen_cursor], 32
+DVI [next_screen_cursor], 32
+MLI [next_screen_cursor], 32
+
+SET [next_next_screen_cursor], [next_screen_cursor]
+ADD [next_next_screen_cursor], 32
+MOD [next_screen_cursor], 386
+MOD [next_next_screen_cursor], 386
+
 SET J, [screen_cursor]
 
-ADD J, 32
-DVI J, 32
-MLI J, 32
-MOD J, 386
+    :blank_current_line
+    ; already blanked line
+    IFC [J + 0x8000], 0b1111111100000000 ; if front and back colour are 0, aka all black
+    SET PC, setup_blank_next_line
 
-set [screen_cursor], J
+    ; black space
+    SET [J + 0x8000], 0b0000000000001010
+
+    ADD J, 1
+    MOD J, 386
+    IFN J, [next_screen_cursor]
+    SET PC, blank_current_line
+    
+    
+    
+    :setup_blank_next_line
+    SET J, [next_screen_cursor]
+
+
+
+    :blank_next_line
+    IFC [J + 0x8000], 0b1111111100000000
+    SET PC, fin_blank_next_line
+
+    ; black space
+    SET [J + 0x8000], 0b0000000000001010
+
+    ADD J, 1
+    MOD J, 386
+    IFN J, [next_next_screen_cursor]
+    SET PC, blank_next_line
+
+    :fin_blank_next_line
+
+
+
+SET J, [next_screen_cursor]
+SET [screen_cursor], [next_screen_cursor]
 SET PC, Y
 
 :getch
