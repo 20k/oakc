@@ -7,88 +7,17 @@ pub struct Dcpu16;
 
 impl Target for Dcpu16{
     fn prelude(&self) -> String {
-        /*format!(
-            "SET PC, variables_end
-            :stack_size
-            DAT {}
-            :heap_size
-            DAT {}
-            :stack_idx
-            DAT 0x9000
-            :heap_idx
-            DAT 0x4000
-            :variables_end
-            SET Z, heap_idx
-            SET PC, start_program
-            ", var_size, heap_size)*/
+        let mut fstr = String::from("SET PC, definitions_end\n");
 
-        String::from("SET PC, definitions_end\n\
-        :callstack_idx\n\
-        DAT callstack\n\
-        :heap_idx\n\
-        DAT 0x4000\n\
-        :
-        :callstack\n\
-        DAT 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n\
-        :gt\n\
-        SET Y, POP\n\
-        SET A, POP\n\
-        SET B, POP\n\
-        SET C, 0\n\
-        IFA A, B\n\
-        SET C, 1\n\
-        SET PUSH, C\n\
-        SET PC, Y\n\
-        :ge\n\
-        SET Y, POP\n\
-        SET A, POP\n\
-        SET B, POP\n\
-        SET C, 1\n\
-        IFU A, B\n\
-        SET C, 0\n\
-        SET PUSH, C\n\
-        SET PC, Y\n\
-        :lt\n\
-        SET Y, POP
-        SET A, POP\n\
-        SET B, POP\n\
-        SET C, 0\n\
-        IFU A, B\n\
-        SET C, 1\n\
-        SET PUSH, C\n\
-        SET PC, Y\n\
-        :le\n\
-        SET Y, POP\n\
-        SET A, POP\n\
-        SET B, POP\n\
-        SET C, 1\n\
-        IFA A, B\n\
-        SET C, 0\n\
-        SET PUSH, C\n\
-        SET PC, Y\n\
-        :prn\n\
-        SET Y, POP\n\
-        SET I, POP\n\
-        SET PC, Y\n\
-        :prs\n\
-        SET Y, POP\n\
-        SET I, POP\n\
-        SET PC, Y\n\
-        :prc\n\
-        SET Y, POP\n\
-        SET I, POP\n\
-        SET PC, Y\n\
-        :prend\n\
-        SET Y, POP\n\
-        SET PC, Y\n\
-        :getch\n\
-        SET Y, POP\n\
-        SET PUSH, 0\n\
-        SET PC, Y\n\
+        fstr.push_str(include_str!("std.d16"));
+    
+        fstr.push_str("\
         :definitions_end\n\
         SET Z, heap_idx\n\
         SET PC, start_program\n\
-        ")
+        ");
+        
+        fstr
     }
 
     fn postlude(&self) -> String {

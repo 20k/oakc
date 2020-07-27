@@ -1,0 +1,72 @@
+:callstack_idx
+DAT callstack
+
+:heap_idx
+DAT 0x4000
+
+:callstack
+DAT 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+:gt
+SET Y, POP
+SET A, POP
+SET B, POP
+SET C, 0
+IFA A, B
+SET C, 1
+SET PUSH, C
+SET PC, Y
+
+:ge
+SET Y, POP
+SET A, POP
+SET B, POP
+SET C, 1
+IFU A, B
+SET C, 0
+SET PUSH, C
+SET PC, Y
+
+:lt
+SET Y, POP
+SET A, POP
+SET B, POP
+SET C, 0
+IFU A, B
+SET C, 1
+SET PUSH, C
+SET PC, Y
+
+:le
+SET Y, POP
+SET A, POP
+SET B, POP
+SET C, 1
+IFA A, B
+SET C, 0
+SET PUSH, C
+SET PC, Y
+
+:prn
+SET Y, POP
+SET I, POP
+SET PC, Y
+
+:prs
+SET Y, POP
+SET I, POP
+SET PC, Y
+
+:prc
+SET Y, POP
+SET I, POP
+SET PC, Y
+
+:prend
+SET Y, POP
+SET PC, Y
+
+:getch
+SET Y, POP
+SET PUSH, 0
+SET PC, Y
