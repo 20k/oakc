@@ -154,45 +154,56 @@ impl Target for Dcpu16{
     }
 
     fn free(&self) -> String {
-        String::from("\n    \
+        String::from("\n\
         ;free\n\
         SET Y, POP\n\
-        SET Y, POP\n    \
+        SET Y, POP\n\
         ; free doesn't actually free memory\n\
         ")
     }
 
     fn store(&self, size: i32)  -> String {
-        /*let mut fstr =       format!("SET I, POP ; store at address I\n\
-                                     SET J, 0 ; stack register root\n\
-                                     SUB J, 1 ; 0th element\n\
-                                     SUB J, {} ; size'th element\n\
-                                     SUB J, I ; size'th + address\n\
-                                     SUB J, 1 ; size - 1 + address\n", size);*/
+        let simple_assembly = false;
 
-        let mut fstr = format!("SET I, POP ; Get address to store at\n\
-                                SET J, -1 ; Init J to first stack element\n\
-                                SUB J, I ; Set J to the address to start storing at\n\
-                                SUB J, {} ; Offset J by size\n\
-                                ADD J, 1 ; Start from size-1\n", size);
-
-        for i in 0..size {
-            fstr.push_str("STI [J], POP\n"); // STI increases I by 1 
+        if(!simple_assembly) {
+            let mut fstr = format!("SET I, POP ; Get address to store at\n\
+                                    XOR I, 0xFFFF\n");
+    
+            for i in 0..size {
+                let val = -size + 1 + i;
+    
+                // The assembler I'm using to test doesn't currently support unary arguments
+                if(val >= 0) {
+                    fstr.push_str(&format!("SET [I + {}], POP\n", val));
+                }
+                else {
+                    fstr.push_str(&format!("SET [I - {}], POP\n", -val));
+                }
+            }
+    
+            return fstr;
         }
+        // This branch is easier on an assembler because it doesn't require expression support. Its a cycle slower though
+        else {
+            let mut fstr = format!("SET I, POP ; Get address to store at\n\
+                                    XOR I, 0xFFFF\n\
+                                    SUB I, {} ; take 2s complement by adding 1, subtract size\n", -size + 1);
 
-        fstr.push_str("\n");
+            for i in 0..size {
+                fstr.push_str("STI [I], POP\n");
+            }
 
-        fstr
+            return fstr;
+        }
     }
 
     fn load(&self, size: i32) -> String {
         let mut fstr = String::from("SET I, POP ; load\n\
-                                     SET J, 0\n\
-                                     SUB J, 1\n\
-                                     SUB J, I\n");
+                                     XOR I, 0xFFFF ; this is equivalent to doing (-I)-1\n"); 
 
         for i in 0..size {
-            fstr.push_str("STD PUSH, [J]\n");
+            //fstr.push_str("SET PUSH, [I + {}]", i); //cycle equivalent
+            fstr.push_str("STD PUSH, [I]\n");
         }
 
         fstr
@@ -217,7 +228,7 @@ impl Target for Dcpu16{
     }
 
     fn call_fn(&self, name: String) -> String {
-        format!("JSR {} ; native\n", name) // Is this valid? Will Oak look up stack frames?
+        format!("JSR {} ; native\n", name)
     }
 
     fn call_foreign_fn(&self, name: String) -> String {
@@ -227,7 +238,6 @@ impl Target for Dcpu16{
     fn begin_while(&self) -> String {
         //Labels would be a much better approach here, but would need a unique numbering system
         //PC here is set to AFTER this instruction
-        //String::from("SET PUSH, PC ; store loop start\n")
         String::from("
                       SET I, [callstack_idx]\n\
                       SET [I], PC ; store loop start\n\
