@@ -8,12 +8,12 @@ DAT 0x4000
 DAT 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 :prn_stack
-.DAT 0, 0, 0, 0, 0, 0 ; -xxxxx is the largest number that can be displayed
+DAT 0, 0, 0, 0, 0, 0 ; -xxxxx is the largest number that can be displayed
 
-.DEF VRAMADDRESS, 0x8000
-.DEF VRAMWORDS, 386
-.DEF SCREENWIDTH, 32
-.DEF SCREENHEIGHT, 12
+;.DEF VRAMADDRESS, 0x8000
+;.DEF VRAMWORDS, 386
+;.DEF SCREENWIDTH, 32
+;.DEF SCREENHEIGHT, 12
 
 :screen_cursor
 DAT 0
@@ -36,7 +36,7 @@ DAT 0
     SET PC, discovery ; not screen
 
     SET A, 0           ; MEM_MAP_SCREEN
-    SET B, VRAMADDRESS ; Will initialise the LEM and set the vram address
+    SET B, 0x8000 ; Will initialise the LEM and set the vram address
 
     HWI I              ; Command the LEM to turn on
     :finished_discovery
@@ -138,11 +138,11 @@ SET PC, Y
         
         SET B, [prn_stack + X]
         ADD B, 48
-        SET [J + VRAMADDRESS], B
-        ADD [J + VRAMADDRESS], 0xF000
+        SET [J + 0x8000], B
+        ADD [J + 0x8000], 0xF000
         
         ADD J, 1
-        MOD J, VRAMWORDS
+        MOD J, 386
         
         SET PC, prn_display
         
@@ -164,11 +164,11 @@ SET PC, Y
         IFE [I], 0 ; null
         SET PC, found_null ; terminate loop
 
-        SET [J + VRAMADDRESS], [I]
+        SET [J + 0x8000], [I]
         SUB I, 1
-        ADD [J + VRAMADDRESS], 0b1111000000000000 ; set character to white
+        ADD [J + 0x8000], 0b1111000000000000 ; set character to white
         ADD J, 1
-        MOD J, VRAMWORDS ; wraparound
+        MOD J, 386 ; wraparound
 
         SET PC, not_null
 
@@ -185,10 +185,10 @@ SET PC, Y
     
     SET J, [screen_cursor]
 
-    SET [J + VRAMADDRESS], I
-    ADD [J + VRAMADDRESS], 0b1111000000000000 ; set character to white
+    SET [J + 0x8000], I
+    ADD [J + 0x8000], 0b1111000000000000 ; set character to white
     ADD J, 1
-    MOD J, VRAMWORDS ; wraparound
+    MOD J, 386 ; wraparound
     
     SET [screen_cursor], J
 

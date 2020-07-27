@@ -27,7 +27,11 @@ impl Target for Dcpu16{
     }
 
     fn begin_entry_point(&self, var_size: i32, heap_size: i32) -> String {
-        String::from(":start_program\nSET Z, heap_idx\n")
+        let mut fstr = String::from(":start_program\nSET Z, heap_idx\n");
+
+        fstr.push_str(&format!("SET SP, {}\n", -(var_size + heap_size + 1)));
+
+        fstr
     }
 
     fn end_entry_point(&self) -> String {
@@ -69,12 +73,12 @@ impl Target for Dcpu16{
 
     fn divide(&self) -> String {
         //Assuming signed integers
-        String::from("    ;div
+        String::from("    ;div\n\
         DVI PEEK, POP\n")
     }
 
     fn multiply(&self) -> String {
-        String::from("    ;mult
+        String::from("    ;mult\n\
         MLI PEEK, POP\n")
     }
 
@@ -113,7 +117,9 @@ impl Target for Dcpu16{
                     fstr.push_str(&format!("SET [I + {}], POP\n", val));
                 }
                 else {
-                    fstr.push_str(&format!("SET [I - {}], POP\n", -val));
+                    let pval = (val as i16) as u16;
+
+                    fstr.push_str(&format!("SET [I + {}], POP\n", pval));
                 }
             }
     
