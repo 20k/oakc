@@ -7,8 +7,8 @@ DAT 0x4000
 :callstack
 DAT 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
-:media_handler
-DAT boot_screen
+:prn_stack
+.DAT 0, 0, 0, 0, 0, 0 ; -xxxxx is the largest number that can be displayed
 
 .DEF VRAMADDRESS, 0x8000
 .DEF VRAMWORDS, 386
@@ -84,9 +84,74 @@ SET PUSH, C
 SET PC, Y
 
 :prn
-SET Y, POP
-SET I, POP
-SET PC, Y
+    SET Y, POP ; return address
+    SET I, POP ; number to print as a string
+    SET J, [screen_cursor]
+    SET X, 0 ; prn stack index
+    SET A, 0 ; is negative
+    
+    IFE I, 0
+    SET PC, not_negative
+    IFA I, 0 ; assumes number is signed
+    SET PC, not_negative
+    
+    ; take positive value. won't handle INT_MIN correctly
+    XOR I, 0xFFFF
+    ADD I, 1
+        
+    SET [0 + prn_stack], -3 ; everything at the end will have 48 added, so this gives us '-'
+    SET [1 + prn_stack], -3
+    SET [2 + prn_stack], -3
+    SET [3 + prn_stack], -3
+    SET [4 + prn_stack], -3
+    SET [5 + prn_stack], -3
+    
+    SET A, 1 ; is negative
+        
+    :not_negative
+        :prn_loop
+        IFL I, 10
+        SET PC, lt_ten
+        
+        SET Y, I
+        MOD Y, 10 ; display in base 10
+        DIV I, 10 
+        
+        SET [X + prn_stack], Y
+        ADD X, 1
+        
+        SET PC, prn_loop
+
+
+    :lt_ten
+    SET [X + prn_stack], I
+    ADD X, 1
+    
+    IFE A, 1 ; if negative
+    ADD X, 1 ; bump pointer
+    
+        :prn_display
+        SUB X, 1
+        
+        IFU X, 0
+        SET PC, prn_done
+        
+        SET Y, [prn_stack + X]
+        ADD Y, 48
+        SET [J + VRAMADDRESS], Y
+        ADD [J + VRAMADDRESS], 0xF000
+        
+        ADD J, 1
+        MOD J, VRAMWORDS
+        
+        SET PC, prn_display
+        
+    :prn_done
+        
+    SET [screen_cursor], J
+
+    SET PC, Y
+; end prn
 
 ; print string. stack is [address, returnaddr]. string is null terminated
 :prs
