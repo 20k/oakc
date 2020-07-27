@@ -102,42 +102,25 @@ impl Target for Dcpu16{
     }
 
     fn store(&self, size: i32)  -> String {
-        let simple_assembly = false;
+        let mut fstr = format!(";store\n\
+                                SET I, POP ; Get address to store at\n\
+                                XOR I, 0xFFFF\n");
 
-        if(!simple_assembly) {
-            let mut fstr = format!(";store\n\
-                                    SET I, POP ; Get address to store at\n\
-                                    XOR I, 0xFFFF\n");
-    
-            for i in 0..size {
-                let val = -size + 1 + i;
-    
-                // The assembler I'm using to test doesn't currently support unary arguments
-                if(val >= 0) {
-                    fstr.push_str(&format!("SET [I + {}], POP\n", val));
-                }
-                else {
-                    let pval = (val as i16) as u16;
+        for i in 0..size {
+            let val = -size + 1 + i;
 
-                    fstr.push_str(&format!("SET [I + {}], POP\n", pval));
-                }
+            if(val >= 0) {
+                fstr.push_str(&format!("SET [I + {}], POP\n", val));
             }
-    
-            return fstr;
-        }
-        // This branch is easier on an assembler because it doesn't require expression support. Its a cycle slower though
-        else {
-            let mut fstr = format!(";store\n\
-                                    SET I, POP ; Get address to store at\n\
-                                    XOR I, 0xFFFF\n\
-                                    SUB I, {} ; take 2s complement by adding 1, subtract size\n", -size + 1);
+            //This exists because dcpu-ide doesn't support a binary minus, and neither my assembler nor dcpu-ide support a unary minus
+            else {
+                let pval = (val as i16) as u16;
 
-            for i in 0..size {
-                fstr.push_str("STI [I], POP\n");
+                fstr.push_str(&format!("SET [I + {}], POP\n", pval));
             }
-
-            return fstr;
         }
+
+        return fstr;
     }
 
     fn load(&self, size: i32) -> String {
