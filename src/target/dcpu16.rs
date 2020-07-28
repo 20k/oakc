@@ -14,7 +14,6 @@ impl Target for Dcpu16{
     
         fstr.push_str("\
         :definitions_end\n\
-        SET Z, heap_idx\n\
         JSR boot_screen\n\
         SET PC, start_program\n\
         ");
@@ -27,7 +26,7 @@ impl Target for Dcpu16{
     }
 
     fn begin_entry_point(&self, var_size: i32, heap_size: i32) -> String {
-        let mut fstr = String::from(":start_program\nSET Z, heap_idx\n");
+        let mut fstr = String::from(":start_program\n");
 
         fstr.push_str(&format!("SET SP, {}\n", -(var_size + heap_size + 1)));
 
@@ -87,8 +86,8 @@ impl Target for Dcpu16{
         String::from("\n    \
         ;allocate\n\
         SET Y, POP   ; pop value off stack to get requested memory size\n\
-        SET PUSH, Z  ; push heap address to stack\n\
-        ADD Z, Y     ; increment 'heap pointer' by the number of words requested\n\
+        SET PUSH, [heap_idx]  ; push heap address to stack\n\
+        ADD [heap_idx], Y     ; increment 'heap pointer' by the number of words requested\n\
         ")
     }
 
