@@ -183,7 +183,7 @@ impl Target for Dcpu16{
     }
 
     fn compile(&self, code: String) -> Result<()> {
-        if let Ok(_) = write("main.dasm16", code) {
+        if let Ok(_) = write("main.d16", code) {
             return Result::Ok(());
         }
 
