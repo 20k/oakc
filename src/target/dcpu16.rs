@@ -127,9 +127,15 @@ impl Target for Dcpu16{
                                      SET I, POP ; load\n\
                                      XOR I, 0xFFFF ; this is equivalent to doing (-I)-1\n"); 
 
-        for i in 0..size {
-            //fstr.push_str("SET PUSH, [I + {}]", i); //cycle equivalent
-            fstr.push_str("STD PUSH, [I]\n");
+        if size == 1 {
+            fstr.push_str("SET PUSH, [I]\n");
+        }
+        else
+        {
+            for i in 0..size {
+                //fstr.push_str("SET PUSH, [I + {}]", i); //cycle equivalent
+                fstr.push_str("STD PUSH, [I]\n");
+            }
         }
 
         fstr
